@@ -1,49 +1,79 @@
 <script lang="ts">
-  import { invoke } from "@tauri-apps/api/core";
+  import { invoke } from '@tauri-apps/api/tauri';
+  import FileExplorer from '../components/FileExplorer.svelte';
+  import JsonEditor from '../components/JsonEditor.svelte';
+  import UrlConfig from '../components/UrlConfig.svelte';
+  import RequestStatus from '../components/RequestStatus.svelte';
 
-  let name = $state("");
-  let greetMsg = $state("");
+  let jsonData = {};
+  let response = '';
+  let requestUrl = 'https://api.example.com/endpoint';
+  let requestMethod = 'GET';
+  let loading = false;
+  let error: string | null = null;
+  let lastRequestTime: string | null = null;
 
-  async function greet(event: Event) {
-    event.preventDefault();
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    greetMsg = await invoke("greet", { name });
+  async function sendRequest() {
+    loading = true;
+    error = null;
+    response = '';
+    
+    try {
+      const result = await invoke('proxy_request', {
+        url: requestUrl,
+        method: requestMethod,
+        body: requestMethod !== 'GET' ? jsonData : null
+      });
+      
+      response = result;
+      lastRequestTime = new Date().toLocaleTimeString();
+    } catch (err) {
+      error = err instanceof Error 
+        ? err.message
+        : 'An unknown error occurred';
+      response = '';
+    } finally {
+      loading = false;
+    }
+  }
+
+  function handleFileSelect(event: CustomEvent) {
+    console.log('Selected file:', event.detail);
+    // Handle file selection here
   }
 </script>
 
 <main class="container">
-  <h1>Welcome to Tauri + Svelte</h1>
-
-  <div class="row">
-    <a href="https://vitejs.dev" target="_blank">
-      <img src="/vite.svg" class="logo vite" alt="Vite Logo" />
-    </a>
-    <a href="https://tauri.app" target="_blank">
-      <img src="/tauri.svg" class="logo tauri" alt="Tauri Logo" />
-    </a>
-    <a href="https://kit.svelte.dev" target="_blank">
-      <img src="/svelte.svg" class="logo svelte-kit" alt="SvelteKit Logo" />
-    </a>
+  <h1>HTTP Request Studio</h1>
+  <div class="workspace">
+    <FileExplorer on:fileSelect={handleFileSelect}/>
+    <div class="editor-section">
+      <UrlConfig bind:url={requestUrl} bind:method={requestMethod} />
+      <JsonEditor bind:value={jsonData} />
+      <button on:click={sendRequest} disabled={loading}>
+        {loading ? 'Sending...' : 'Send Request'}
+      </button>
+      <RequestStatus 
+        {loading}
+        {error}
+        {lastRequestTime}
+      />
+      {#if response}
+        <div>
+          <h2>Response</h2>
+          <pre>{JSON.stringify(response, null, 2)}</pre>
+        </div>
+      {/if}
+    </div>
   </div>
-  <p>Click on the Tauri, Vite, and SvelteKit logos to learn more.</p>
-
-  <form class="row" onsubmit={greet}>
-    <input id="greet-input" placeholder="Enter a name..." bind:value={name} />
-    <button type="submit">Greet</button>
-  </form>
-  <p>{greetMsg}</p>
 </main>
 
 <style>
-.logo.vite:hover {
-  filter: drop-shadow(0 0 2em #747bff);
-}
-
-.logo.svelte-kit:hover {
-  filter: drop-shadow(0 0 2em #ff3e00);
-}
-
 :root {
+  --background: #e0e5ec;
+  --text: #2d3436;
+  --shadow-light: #ffffff;
+  --shadow-dark: #a3b1c6;
   font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
   font-size: 16px;
   line-height: 24px;
@@ -61,22 +91,61 @@
 
 .container {
   margin: 0;
-  padding-top: 10vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  text-align: center;
+  min-height: 100vh;
+  padding: 2rem;
+  background-color: var(--background);
+  color: var(--text);
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: 0.75s;
+h1, h2 {
+  color: var(--text);
+  margin-bottom: 2rem;
 }
 
-.logo.tauri:hover {
-  filter: drop-shadow(0 0 2em #24c8db);
+button {
+  background: var(--background);
+  padding: 1rem 2rem;
+  border: none;
+  border-radius: 15px;
+  color: var(--text);
+  font-weight: bold;
+  box-shadow: 5px 5px 10px var(--shadow-dark),
+              -5px -5px 10px var(--shadow-light);
+  transition: all 0.2s ease;
+  margin: 2rem 0;
+}
+
+button:hover {
+  box-shadow: 2px 2px 5px var (--shadow-dark),
+              -2px -2px 5px var(--shadow-light);
+}
+
+button:active {
+  box-shadow: inset 5px 5px 10px var(--shadow-dark),
+              inset -5px -5px 10px var(--shadow-light);
+}
+
+button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+pre {
+  background: var(--background);
+  padding: 2rem;
+  border-radius: 15px;
+  box-shadow: inset 5px 5px 10px var(--shadow-dark),
+              inset -5px -5px 10px var(--shadow-light);
+  text-align: left;
+  margin-top: 1rem;
+}
+
+.logo.vite:hover {
+  filter: drop-shadow(0 0 2em #747bff);
+}
+
+.logo.svelte-kit:hover {
+  filter: drop-shadow(0 0 2em #ff3e00);
 }
 
 .row {
@@ -92,10 +161,6 @@ a {
 
 a:hover {
   color: #535bf2;
-}
-
-h1 {
-  text-align: center;
 }
 
 input,
@@ -135,6 +200,10 @@ button {
 
 @media (prefers-color-scheme: dark) {
   :root {
+    --background: #2f2f2f;
+    --text: #e0e5ec;
+    --shadow-light: #3d3d3d;
+    --shadow-dark: #222222;
     color: #f6f6f6;
     background-color: #2f2f2f;
   }
@@ -153,4 +222,17 @@ button {
   }
 }
 
+.workspace {
+  display: flex;
+  align-items: flex-start;
+  gap: 2rem;
+  padding: 2rem;
+}
+
+.editor-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
 </style>
