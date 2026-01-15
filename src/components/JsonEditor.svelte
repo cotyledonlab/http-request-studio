@@ -25,15 +25,12 @@
   }
 
   // Update textarea when value changes from outside
-  $: if (editor && JSON.stringify(value) !== JSON.stringify(tryParse(editor.value))) {
-    editor.value = JSON.stringify(value, null, 2);
-  }
-
-  function tryParse(str: string): unknown {
-    try {
-      return JSON.parse(str);
-    } catch {
-      return null;
+  // Uses internalValue to avoid expensive JSON operations on every reactive update
+  $: if (editor) {
+    const nextInternalValue = JSON.stringify(value, null, 2);
+    if (nextInternalValue !== internalValue) {
+      internalValue = nextInternalValue;
+      editor.value = internalValue;
     }
   }
 </script>

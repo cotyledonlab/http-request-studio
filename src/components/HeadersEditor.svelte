@@ -18,7 +18,7 @@
 
   function toggleHeader(index: number) {
     headers[index].enabled = !headers[index].enabled;
-    headers = headers;
+    headers = [...headers]; // create new array reference to trigger Svelte reactivity
   }
 
   // Common headers for autocomplete

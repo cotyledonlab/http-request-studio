@@ -17,7 +17,10 @@ async fn proxy_request(
 ) -> Result<ProxyResponse, String> {
     let client = reqwest::Client::new();
     
-    let mut request = match method.to_uppercase().as_str() {
+    // Uppercase method once to avoid redundant string allocation
+    let method_upper = method.to_uppercase();
+    
+    let mut request = match method_upper.as_str() {
         "GET" => client.get(&url),
         "POST" => client.post(&url),
         "PUT" => client.put(&url),
@@ -35,9 +38,9 @@ async fn proxy_request(
         }
     }
     
-    // Add body for methods that support it
+    // Add body for methods that support it (exclude GET and HEAD)
     if let Some(body_content) = body {
-        if !["GET", "HEAD"].contains(&method.to_uppercase().as_str()) {
+        if !["GET", "HEAD"].contains(&method_upper.as_str()) {
             request = request.body(body_content);
         }
     }
@@ -53,8 +56,16 @@ async fn proxy_request(
     
     let mut response_headers = HashMap::new();
     for (key, value) in response.headers().iter() {
-        if let Ok(v) = value.to_str() {
-            response_headers.insert(key.to_string(), v.to_string());
+        match value.to_str() {
+            Ok(v) => {
+                response_headers.insert(key.to_string(), v.to_string());
+            }
+            Err(_) => {
+                eprintln!(
+                    "Warning: failed to convert header '{}' value to UTF-8; skipping this header",
+                    key
+                );
+            }
         }
     }
     

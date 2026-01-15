@@ -26,8 +26,9 @@
   function getEnabledHeaders(): Record<string, string> {
     const result: Record<string, string> = {};
     for (const h of headers) {
-      if (h.enabled && h.key.trim()) {
-        result[h.key.trim()] = h.value;
+      const trimmedKey = h.key.trim();
+      if (h.enabled && trimmedKey) {
+        result[trimmedKey] = h.value;
       }
     }
     return result;
@@ -52,7 +53,7 @@
         url: requestUrl,
         method: requestMethod,
         headers: getEnabledHeaders(),
-        body: requestMethod !== 'GET' ? JSON.stringify(jsonData) : null
+        body: requestMethod !== 'GET' && requestMethod !== 'HEAD' ? JSON.stringify(jsonData) : null
       });
       
       requestDuration = Math.round(performance.now() - startTime);
