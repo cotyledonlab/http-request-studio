@@ -5,11 +5,14 @@
   import UrlConfig from '../components/UrlConfig.svelte';
   import RequestStatus from '../components/RequestStatus.svelte';
   import HeadersEditor from '../components/HeadersEditor.svelte';
+  import JsonTreeViewer from '../components/JsonTreeViewer.svelte';
+  import ThemeToggle from '../components/ThemeToggle.svelte';
 
   type Header = { key: string; value: string; enabled: boolean };
 
   let jsonData: Record<string, unknown> = {};
-  let response = '';
+  let response: unknown = '';
+  let isJsonResponse = false;
   let responseHeaders: Record<string, string> = {};
   let statusCode: number | null = null;
   let requestUrl = 'https://api.example.com/endpoint';
@@ -38,6 +41,7 @@
     loading = true;
     error = null;
     response = '';
+    isJsonResponse = false;
     responseHeaders = {};
     statusCode = null;
     requestDuration = null;
@@ -60,11 +64,13 @@
       statusCode = result.status;
       responseHeaders = result.headers;
       
-      // Try to parse as JSON for pretty printing
+      // Try to parse as JSON for tree viewer
       try {
         response = JSON.parse(result.body);
+        isJsonResponse = true;
       } catch {
         response = result.body;
+        isJsonResponse = false;
       }
       
       lastRequestTime = new Date().toLocaleTimeString();
@@ -86,7 +92,10 @@
 </script>
 
 <main class="container">
-  <h1>HTTP Request Studio</h1>
+  <header class="app-header">
+    <h1>HTTP Request Studio</h1>
+    <ThemeToggle />
+  </header>
   <div class="workspace">
     <FileExplorer on:fileSelect={handleFileSelect}/>
     <div class="editor-section">
@@ -131,9 +140,13 @@
           {/if}
           
           {#if response}
-            <div>
+            <div class="response-body">
               <h3>Response Body</h3>
-              <pre>{typeof response === 'string' ? response : JSON.stringify(response, null, 2)}</pre>
+              {#if isJsonResponse}
+                <JsonTreeViewer data={response} />
+              {:else}
+                <pre class="raw-response">{response}</pre>
+              {/if}
             </div>
           {/if}
         </div>
@@ -143,11 +156,23 @@
 </main>
 
 <style>
-:root {
+:root, :global([data-theme="light"]) {
   --background: #e0e5ec;
   --text: #2d3436;
   --shadow-light: #ffffff;
   --shadow-dark: #a3b1c6;
+  
+  /* JSON Tree Colors - Light Theme */
+  --key-color: #e06c75;
+  --string-color: #50a14f;
+  --number-color: #c18401;
+  --boolean-color: #0184bc;
+  --null-color: #a626a4;
+  --bracket-color: #383a42;
+  --border-color: rgba(0, 0, 0, 0.1);
+  --hover-bg: rgba(0, 0, 0, 0.05);
+  --success-color: #27ae60;
+  
   font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
   font-size: 16px;
   line-height: 24px;
@@ -161,6 +186,27 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-text-size-adjust: 100%;
+}
+
+:global([data-theme="dark"]) {
+  --background: #2f2f2f;
+  --text: #e0e5ec;
+  --shadow-light: #3d3d3d;
+  --shadow-dark: #222222;
+  
+  /* JSON Tree Colors - Dark Theme (One Dark inspired) */
+  --key-color: #e06c75;
+  --string-color: #98c379;
+  --number-color: #d19a66;
+  --boolean-color: #56b6c2;
+  --null-color: #c678dd;
+  --bracket-color: #abb2bf;
+  --border-color: rgba(255, 255, 255, 0.1);
+  --hover-bg: rgba(255, 255, 255, 0.05);
+  --success-color: #98c379;
+  
+  color: #f6f6f6;
+  background-color: #2f2f2f;
 }
 
 .container {
@@ -272,28 +318,51 @@ button {
   margin-right: 5px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #2f2f2f;
-    --text: #e0e5ec;
-    --shadow-light: #3d3d3d;
-    --shadow-dark: #222222;
-    color: #f6f6f6;
-    background-color: #2f2f2f;
-  }
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
 
-  a:hover {
-    color: #24c8db;
-  }
+.app-header h1 {
+  margin: 0;
+}
 
-  input,
-  button {
-    color: #ffffff;
-    background-color: #0f0f0f98;
-  }
-  button:active {
-    background-color: #0f0f0f69;
-  }
+.response-body {
+  width: 100%;
+}
+
+.raw-response {
+  background: var(--background);
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: inset 3px 3px 6px var(--shadow-dark),
+              inset -3px -3px 6px var(--shadow-light);
+  overflow-x: auto;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 0.9rem;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+/* Smooth theme transitions */
+:global(*) {
+  transition: background-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+:global([data-theme="dark"]) a:hover {
+  color: #24c8db;
+}
+
+:global([data-theme="dark"]) input,
+:global([data-theme="dark"]) button {
+  color: #ffffff;
+  background-color: #0f0f0f98;
+}
+
+:global([data-theme="dark"]) button:active {
+  background-color: #0f0f0f69;
 }
 
 .workspace {
