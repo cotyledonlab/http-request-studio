@@ -1,36 +1,78 @@
 <script lang="ts">
-  import { invoke } from '@tauri-apps/api/tauri';
+  import { invoke } from '@tauri-apps/api/core';
   import FileExplorer from '../components/FileExplorer.svelte';
   import JsonEditor from '../components/JsonEditor.svelte';
   import UrlConfig from '../components/UrlConfig.svelte';
   import RequestStatus from '../components/RequestStatus.svelte';
+  import HeadersEditor from '../components/HeadersEditor.svelte';
 
-  let jsonData = {};
+  type Header = { key: string; value: string; enabled: boolean };
+
+  let jsonData: Record<string, unknown> = {};
   let response = '';
+  let responseHeaders: Record<string, string> = {};
+  let statusCode: number | null = null;
   let requestUrl = 'https://api.example.com/endpoint';
   let requestMethod = 'GET';
   let loading = false;
   let error: string | null = null;
   let lastRequestTime: string | null = null;
+  let requestDuration: number | null = null;
+  let headers: Header[] = [
+    { key: 'Content-Type', value: 'application/json', enabled: true },
+    { key: '', value: '', enabled: true }
+  ];
+
+  function getEnabledHeaders(): Record<string, string> {
+    const result: Record<string, string> = {};
+    for (const h of headers) {
+      const trimmedKey = h.key.trim();
+      if (h.enabled && trimmedKey) {
+        result[trimmedKey] = h.value;
+      }
+    }
+    return result;
+  }
 
   async function sendRequest() {
     loading = true;
     error = null;
     response = '';
+    responseHeaders = {};
+    statusCode = null;
+    requestDuration = null;
+    
+    const startTime = performance.now();
     
     try {
-      const result = await invoke('proxy_request', {
+      const result = await invoke<{
+        status: number;
+        headers: Record<string, string>;
+        body: string;
+      }>('proxy_request', {
         url: requestUrl,
         method: requestMethod,
-        body: requestMethod !== 'GET' ? jsonData : null
+        headers: getEnabledHeaders(),
+        body: requestMethod !== 'GET' && requestMethod !== 'HEAD' ? JSON.stringify(jsonData) : null
       });
       
-      response = result;
+      requestDuration = Math.round(performance.now() - startTime);
+      statusCode = result.status;
+      responseHeaders = result.headers;
+      
+      // Try to parse as JSON for pretty printing
+      try {
+        response = JSON.parse(result.body);
+      } catch {
+        response = result.body;
+      }
+      
       lastRequestTime = new Date().toLocaleTimeString();
     } catch (err) {
+      requestDuration = Math.round(performance.now() - startTime);
       error = err instanceof Error 
         ? err.message
-        : 'An unknown error occurred';
+        : String(err);
       response = '';
     } finally {
       loading = false;
@@ -49,7 +91,10 @@
     <FileExplorer on:fileSelect={handleFileSelect}/>
     <div class="editor-section">
       <UrlConfig bind:url={requestUrl} bind:method={requestMethod} />
-      <JsonEditor bind:value={jsonData} />
+      <HeadersEditor bind:headers={headers} />
+      {#if requestMethod !== 'GET'}
+        <JsonEditor bind:value={jsonData} />
+      {/if}
       <button on:click={sendRequest} disabled={loading}>
         {loading ? 'Sending...' : 'Send Request'}
       </button>
@@ -58,10 +103,39 @@
         {error}
         {lastRequestTime}
       />
-      {#if response}
-        <div>
-          <h2>Response</h2>
-          <pre>{JSON.stringify(response, null, 2)}</pre>
+      {#if statusCode !== null || error}
+        <div class="response-section">
+          <div class="response-meta">
+            {#if statusCode !== null}
+              <span class="status-badge" class:success={statusCode >= 200 && statusCode < 300} class:error={statusCode >= 400}>
+                {statusCode}
+              </span>
+            {/if}
+            {#if requestDuration !== null}
+              <span class="duration">{requestDuration}ms</span>
+            {/if}
+          </div>
+          
+          {#if Object.keys(responseHeaders).length > 0}
+            <details class="response-headers">
+              <summary>Response Headers ({Object.keys(responseHeaders).length})</summary>
+              <div class="headers-content">
+                {#each Object.entries(responseHeaders) as [key, value]}
+                  <div class="header-item">
+                    <span class="header-key">{key}:</span>
+                    <span class="header-value">{value}</span>
+                  </div>
+                {/each}
+              </div>
+            </details>
+          {/if}
+          
+          {#if response}
+            <div>
+              <h3>Response Body</h3>
+              <pre>{typeof response === 'string' ? response : JSON.stringify(response, null, 2)}</pre>
+            </div>
+          {/if}
         </div>
       {/if}
     </div>
@@ -234,5 +308,90 @@ button {
   display: flex;
   flex-direction: column;
   align-items: center;
+}
+
+.response-section {
+  width: 100%;
+  margin-top: 1rem;
+}
+
+.response-meta {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.status-badge {
+  padding: 0.4rem 0.8rem;
+  border-radius: 8px;
+  font-weight: bold;
+  font-family: monospace;
+  background: var(--background);
+  box-shadow: 3px 3px 6px var(--shadow-dark),
+              -3px -3px 6px var(--shadow-light);
+}
+
+.status-badge.success {
+  color: #27ae60;
+}
+
+.status-badge.error {
+  color: #e74c3c;
+}
+
+.duration {
+  padding: 0.4rem 0.8rem;
+  border-radius: 8px;
+  font-family: monospace;
+  color: var(--text);
+  opacity: 0.7;
+  background: var(--background);
+  box-shadow: inset 2px 2px 4px var(--shadow-dark),
+              inset -2px -2px 4px var(--shadow-light);
+}
+
+.response-headers {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  border-radius: 12px;
+  background: var(--background);
+  box-shadow: 3px 3px 6px var(--shadow-dark),
+              -3px -3px 6px var(--shadow-light);
+}
+
+.response-headers summary {
+  cursor: pointer;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.headers-content {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--shadow-dark);
+}
+
+.header-item {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+  font-family: monospace;
+  font-size: 0.85rem;
+}
+
+.header-key {
+  color: #396cd8;
+  font-weight: 500;
+}
+
+.header-value {
+  color: var(--text);
+  word-break: break-all;
+}
+
+.response-section h3 {
+  margin: 1rem 0 0.5rem;
+  font-size: 1rem;
 }
 </style>
