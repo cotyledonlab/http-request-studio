@@ -1,36 +1,50 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import type { JSONContent } from 'svelte-jsoneditor';
 
-  let json: JSONContent = {
-    json: {
-      message: "Hello, world!"
-    }
-  };
-
+  export let value: Record<string, unknown> = {};
+  
   let editor: HTMLTextAreaElement;
   let isValidJson = true;
+  let internalValue = '';
 
   onMount(() => {
-    editor.value = JSON.stringify(json.json, null, 2);
+    internalValue = JSON.stringify(value, null, 2);
+    if (editor) {
+      editor.value = internalValue;
+    }
   });
 
   function handleInput(event: Event) {
+    const newValue = (event.target as HTMLTextAreaElement).value;
     try {
-      json.json = JSON.parse((event.target as HTMLTextAreaElement).value);
-        isValidJson = true;
+      value = JSON.parse(newValue);
+      isValidJson = true;
     } catch (e) {
       isValidJson = false;
+    }
+  }
+
+  // Update textarea when value changes from outside
+  $: if (editor && JSON.stringify(value) !== JSON.stringify(tryParse(editor.value))) {
+    editor.value = JSON.stringify(value, null, 2);
+  }
+
+  function tryParse(str: string): unknown {
+    try {
+      return JSON.parse(str);
+    } catch {
+      return null;
     }
   }
 </script>
 
 <div class="editor-container">
+  <h3>Request Body</h3>
   <textarea 
     bind:this={editor} 
     on:input={handleInput} 
     rows="10" 
-    cols="50"
+    placeholder="Enter JSON body..."
   ></textarea>
   {#if !isValidJson}
     <div class="error">Invalid JSON</div>
@@ -42,6 +56,13 @@
     width: 100%;
     max-width: 600px;
     margin: 0 auto;
+  }
+
+  h3 {
+    margin: 0 0 0.5rem;
+    font-size: 1rem;
+    color: var(--text);
+    text-align: left;
   }
 
   textarea {
