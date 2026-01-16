@@ -17,10 +17,10 @@ This specification outlines the next major development phase for HTTP Request St
 
 ### Features Deferred to Future Phases
 
-- Import from cURL/Postman (Phase 3)
+- Import from Postman (Phase 3)
 - GraphQL support (Phase 3)
-- WebSocket testing (Phase 4)
 - Authentication helpers (Phase 3)
+- WebSocket testing (Phase 4)
 
 ---
 
@@ -571,6 +571,13 @@ Extend existing design system for new components:
 - [ ] Manual testing across platforms
 - [x] Performance optimization
 - [x] Documentation updates
+
+### Phase 3.1: Import from cURL (Week 1)
+
+- [x] Build cURL parsing utility with method/header/body support
+- [x] Add import modal and header action
+- [x] Validate JSON body import and surface warnings
+- [x] Map imported payload into request editor
 
 ---
 

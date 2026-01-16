@@ -1,5 +1,5 @@
 import { writable, get } from 'svelte/store';
-import { invoke } from '@tauri-apps/api/core';
+import { safeInvoke } from '../utils/tauri';
 import type { Environment, EnvironmentState } from '../types';
 import { createId } from '../utils/uuid';
 
@@ -39,7 +39,7 @@ export async function loadEnvironments() {
   environmentsLoading.set(true);
   environmentsError.set(null);
   try {
-    const state = await invoke<EnvironmentState>('load_environments');
+    const state = await safeInvoke<EnvironmentState>('load_environments');
     environmentsStore.set(state.environments);
     activeEnvironmentId.set(state.activeEnvironmentId ?? null);
     environmentsError.set(null);
@@ -56,7 +56,7 @@ export async function saveEnvironments() {
     activeEnvironmentId: get(activeEnvironmentId)
   };
   try {
-    await invoke('save_environments', { state });
+    await safeInvoke('save_environments', { state });
     environmentsError.set(null);
   } catch (error) {
     reportEnvironmentsError(error, 'Failed to save environments.');
@@ -116,7 +116,7 @@ export function duplicateEnvironment(id: string) {
 
 export async function exportEnvironments(path: string) {
   try {
-    await invoke('export_environments', { path });
+    await safeInvoke('export_environments', { path });
     environmentsError.set(null);
     return true;
   } catch (error) {
@@ -127,7 +127,7 @@ export async function exportEnvironments(path: string) {
 
 export async function importEnvironments(path: string) {
   try {
-    const state = await invoke<EnvironmentState>('import_environments', { path });
+    const state = await safeInvoke<EnvironmentState>('import_environments', { path });
     environmentsStore.set(state.environments);
     activeEnvironmentId.set(state.activeEnvironmentId ?? null);
     environmentsError.set(null);

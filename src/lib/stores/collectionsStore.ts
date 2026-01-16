@@ -1,5 +1,5 @@
 import { writable, get } from 'svelte/store';
-import { invoke } from '@tauri-apps/api/core';
+import { safeInvoke } from '../utils/tauri';
 import type { Collection, CollectionMeta } from '../types';
 import { createId } from '../utils/uuid';
 
@@ -28,7 +28,7 @@ export async function refreshCollections() {
   collectionsLoading.set(true);
   collectionsError.set(null);
   try {
-    const collections = await invoke<CollectionMeta[]>('list_collections');
+    const collections = await safeInvoke<CollectionMeta[]>('list_collections');
     collectionsStore.set(collections);
     collectionsError.set(null);
   } catch (error) {
@@ -42,7 +42,7 @@ export async function openCollection(id: string) {
   collectionsLoading.set(true);
   collectionsError.set(null);
   try {
-    const collection = await invoke<Collection>('get_collection', { id });
+    const collection = await safeInvoke<Collection>('get_collection', { id });
     activeCollection.set(collection);
     activeCollectionId.set(id);
     collectionDirty.set(false);
@@ -57,7 +57,7 @@ export async function openCollection(id: string) {
 
 export async function fetchCollection(id: string) {
   try {
-    return await invoke<Collection>('get_collection', { id });
+    return await safeInvoke<Collection>('get_collection', { id });
   } catch (error) {
     reportCollectionsError(error, 'Failed to fetch collection.');
     return null;
@@ -87,7 +87,7 @@ export async function createCollection(name: string, description?: string) {
 
 export async function saveCollection(collection: Collection) {
   try {
-    await invoke('save_collection', { collection });
+    await safeInvoke('save_collection', { collection });
     collectionsStore.update((list) => {
       const existingIndex = list.findIndex((item) => item.id === collection.id);
       const meta: CollectionMeta = {
@@ -113,7 +113,7 @@ export async function saveCollection(collection: Collection) {
 
 export async function deleteCollection(id: string) {
   try {
-    await invoke('delete_collection', { id });
+    await safeInvoke('delete_collection', { id });
     collectionsStore.update((list) => list.filter((item) => item.id !== id));
     if (get(activeCollectionId) === id) {
       activeCollection.set(null);
@@ -128,7 +128,7 @@ export async function deleteCollection(id: string) {
 
 export async function exportCollection(id: string, path: string) {
   try {
-    await invoke('export_collection', { id, path });
+    await safeInvoke('export_collection', { id, path });
     collectionsError.set(null);
     return true;
   } catch (error) {
@@ -139,7 +139,7 @@ export async function exportCollection(id: string, path: string) {
 
 export async function importCollection(path: string) {
   try {
-    const collection = await invoke<Collection>('import_collection', { path });
+    const collection = await safeInvoke<Collection>('import_collection', { path });
     collectionsStore.update((list) => [
       {
         id: collection.id,

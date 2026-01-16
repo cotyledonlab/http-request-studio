@@ -108,12 +108,13 @@ npm run dev
 - Click-to-copy for JSON values
 - JSON validation blocks invalid request bodies
 - Storage error alerts for collections, environments, and history
+- Import from cURL via modal paste
 
 ### Not Yet Implemented (see SPEC.md)
-- Import from cURL/Postman
+- Import from Postman
 - GraphQL support
 - WebSocket testing
- - Authentication helpers
+- Authentication helpers
 
 ## Key Files to Understand
 

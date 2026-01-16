@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import { invoke } from '@tauri-apps/api/core';
+  import { safeInvoke } from '../lib/utils/tauri';
   import FileExplorer from '../components/FileExplorer.svelte';
   import JsonEditor from '../components/JsonEditor.svelte';
   import UrlConfig from '../components/UrlConfig.svelte';
@@ -19,6 +19,7 @@
   import { addHistoryEntry } from '../lib/stores/historyStore';
   import { createId } from '../lib/utils/uuid';
   import { substituteVariables } from '../lib/utils/variableSubstitution';
+  import { parseCurlCommand } from '../lib/utils/curlParser';
   import {
     loadEnvironments,
     environmentsStore,
@@ -78,6 +79,11 @@
   let saveFolderId: string | null = null;
   let saveDefaultName = '';
   const invalidJsonMessage = 'Invalid JSON body. Fix before sending.';
+
+  let showImportModal = false;
+  let curlCommand = '';
+  let curlError: string | null = null;
+  let curlWarnings: string[] = [];
 
   const methodsWithBody: HttpMethod[] = ['POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'];
 
@@ -258,7 +264,7 @@
     let responseStatus = 0;
 
     try {
-      const result = await invoke<{
+      const result = await safeInvoke<{
         status: number;
         headers: Record<string, string>;
         body: string;
@@ -456,6 +462,49 @@
     markClean();
   }
 
+  function openImportModal() {
+    curlCommand = '';
+    curlError = null;
+    curlWarnings = [];
+    showImportModal = true;
+  }
+
+  function handleImportCurl(force = false) {
+    curlError = null;
+    const result = parseCurlCommand(curlCommand);
+    if (!result.payload || result.error) {
+      curlError = result.error ?? 'Unable to parse cURL command.';
+      return;
+    }
+
+    if (result.warnings.length > 0 && !force) {
+      curlWarnings = result.warnings;
+      return;
+    }
+
+    const payload = result.payload;
+    if (payload.body) {
+      try {
+        jsonData = JSON.parse(payload.body);
+      } catch {
+        curlError = 'Request body must be valid JSON to import.';
+        return;
+      }
+    } else {
+      jsonData = {};
+    }
+
+    requestUrl = payload.url;
+    requestMethod = payload.method;
+    headers = payload.headers.length ? payload.headers : [{ key: '', value: '', enabled: true }];
+    isJsonBodyValid = true;
+    currentRequest = null;
+    currentCollectionId = null;
+    markClean();
+    curlWarnings = [];
+    showImportModal = false;
+  }
+
   function withDirtyCheck(action: () => void) {
     if (isDirty) {
       pendingLoadAction = action;
@@ -471,6 +520,7 @@
     <div class="brand">
       <h1>HTTP Request Studio</h1>
       <button class="ghost" on:click={handleNewRequest}>New</button>
+      <button class="ghost" on:click={() => withDirtyCheck(openImportModal)}>Import cURL</button>
     </div>
     <div class="header-actions">
       <EnvironmentSelector
@@ -600,6 +650,43 @@
   on:createFolder={handleSaveFolderCreate}
   on:close={() => (showSaveModal = false)}
 />
+
+<Modal open={showImportModal} title="Import cURL" on:close={() => (showImportModal = false)}>
+  <div class="form-group">
+    <label for="curl-command">cURL command</label>
+    <textarea
+      id="curl-command"
+      class="curl-textarea"
+      rows="6"
+      bind:value={curlCommand}
+      on:input={() => {
+        curlError = null;
+        curlWarnings = [];
+      }}
+      placeholder={`curl -X POST https://api.example.com/users -H "Content-Type: application/json" -d '{"name": "Ada"}'`}
+    ></textarea>
+    <p class="help-text">Supports -X, -H, -d, and --url. JSON bodies only.</p>
+  </div>
+  {#if curlError}
+    <div class="inline-error">{curlError}</div>
+  {/if}
+  {#if curlWarnings.length > 0}
+    <div class="inline-warning">
+      <p>Warnings:</p>
+      <ul>
+        {#each curlWarnings as warning}
+          <li>{warning}</li>
+        {/each}
+      </ul>
+    </div>
+  {/if}
+  <div slot="actions" class="actions">
+    <button class="secondary" on:click={() => (showImportModal = false)}>Cancel</button>
+    <button on:click={() => handleImportCurl(curlWarnings.length > 0)}>
+      {curlWarnings.length > 0 ? 'Import anyway' : 'Import'}
+    </button>
+  </div>
+</Modal>
 
 <EnvironmentManager bind:open={showEnvManager} />
 
@@ -956,6 +1043,66 @@ pre {
 .title-actions .danger {
   border-color: var(--error);
   color: var(--error);
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.form-group label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.curl-textarea {
+  width: 100%;
+  min-height: 160px;
+  resize: vertical;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--background);
+  color: var(--text);
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.help-text {
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.inline-error {
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  background: var(--error-light);
+  color: var(--error);
+  border: 1px solid var(--error);
+  font-size: 0.75rem;
+}
+
+.inline-warning {
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  background: var(--warning-light);
+  color: var(--warning);
+  border: 1px solid var(--warning);
+  font-size: 0.75rem;
+}
+
+.inline-warning p {
+  margin: 0 0 0.35rem;
+  font-weight: 600;
+}
+
+.inline-warning ul {
+  margin: 0;
+  padding-left: 1.1rem;
 }
 
 .response-body {

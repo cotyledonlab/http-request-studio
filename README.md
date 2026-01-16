@@ -33,6 +33,7 @@
 - 🕘 **Request History** — Searchable history with copy-as-cURL actions
 - 🌐 **Environment Variables** — `{{VARIABLE}}` substitution across URL, headers, and body
 - 💾 **Save/Load Requests** — Save current requests with dirty state indicators
+- 🧲 **Import from cURL** — Paste a command and populate the request editor
 - 🔁 **Request Echo** — View the exact request body alongside the response
 - 📋 **Click-to-Copy** — Copy any JSON value with a single click
 - 🧯 **Resilient Storage** — Surface collection/environment/history errors
@@ -80,13 +81,15 @@ npm run tauri build
 6. **Send Request** — Click "Send Request" and view the response
 7. **Save & Organize** — Save requests into collections and folders
 8. **Review History** — Re-run or copy past requests from the history panel
+9. **Import cURL** — Paste a cURL command to load a request quickly
 
 ## 🎯 Roadmap
 
 - [x] Save/load request collections
 - [x] Environment variables
 - [x] Request history
-- [ ] Import from cURL/Postman
+- [x] Import from cURL
+- [ ] Import from Postman
 - [ ] GraphQL support
 - [ ] WebSocket testing
 
