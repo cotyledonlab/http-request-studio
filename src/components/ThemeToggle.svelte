@@ -44,7 +44,13 @@
     border: none;
     padding: 0;
     cursor: pointer;
-    outline: none;
+    outline: 2px solid transparent;
+    outline-offset: 3px;
+    border-radius: 15px;
+  }
+
+  .theme-toggle:focus-visible {
+    outline-color: #1e90ff;
   }
   
   .toggle-track {

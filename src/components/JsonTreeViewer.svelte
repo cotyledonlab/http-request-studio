@@ -32,7 +32,7 @@
   
   function formatValue(val: unknown): string {
     if (val === null) return 'null';
-    if (typeof val === 'string') return `"${val}"`;
+    if (typeof val === 'string') return JSON.stringify(val);
     return String(val);
   }
   
@@ -45,7 +45,7 @@
 </script>
 
 <div class="tree-node" class:root={depth === 0}>
-  <div class="node-row" class:expandable={isExpandable} on:click={toggle} on:keydown={(e) => e.key === 'Enter' && toggle()} role="button" tabindex="0">
+  <div class="node-row" class:expandable={isExpandable} on:click={toggle} on:keydown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), toggle())} role={isExpandable ? 'button' : undefined} tabindex={isExpandable ? 0 : undefined}>
     {#if isExpandable}
       <span class="toggle" class:expanded={isExpanded}>▶</span>
     {:else}
@@ -69,7 +69,7 @@
         <span class="bracket">{isArray ? ']' : '}'}</span>
       {/if}
     {:else}
-      <span class="value {getValueType(data)}" on:click|stopPropagation={copyValue} on:keydown|stopPropagation={(e) => e.key === 'Enter' && copyValue()} role="button" tabindex="0" title="Click to copy">
+      <span class="value {getValueType(data)}" on:click|stopPropagation={copyValue} on:keydown|stopPropagation={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), copyValue())} role="button" tabindex="0" title="Click to copy">
         {formatValue(data)}
         {#if copied}
           <span class="copied-badge" transition:slide={{ duration: 200 }}>✓ Copied!</span>
