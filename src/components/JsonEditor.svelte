@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
 
   export let value: Record<string, unknown> = {};
-  
+
   let editor: HTMLTextAreaElement;
   let isValidJson = true;
   let internalValue = '';
@@ -24,8 +24,6 @@
     }
   }
 
-  // Update textarea when value changes from outside
-  // Uses internalValue to avoid expensive JSON operations on every reactive update
   $: if (editor) {
     const nextInternalValue = JSON.stringify(value, null, 2);
     if (nextInternalValue !== internalValue) {
@@ -36,54 +34,117 @@
 </script>
 
 <div class="editor-container">
-  <h3>Request Body</h3>
-  <textarea 
-    bind:this={editor} 
-    on:input={handleInput} 
-    rows="10" 
-    placeholder="Enter JSON body..."
-  ></textarea>
-  {#if !isValidJson}
-    <div class="error">Invalid JSON</div>
-  {/if}
+  <h3>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="16 18 22 12 16 6"></polyline>
+      <polyline points="8 6 2 12 8 18"></polyline>
+    </svg>
+    Body
+    {#if !isValidJson}
+      <span class="error-badge">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        Invalid JSON
+      </span>
+    {:else}
+      <span class="valid-badge">JSON</span>
+    {/if}
+  </h3>
+  <div class="textarea-wrapper" class:invalid={!isValidJson}>
+    <textarea
+      bind:this={editor}
+      on:input={handleInput}
+      rows="8"
+      placeholder={'{"key": "value"}'}
+      spellcheck="false"
+    ></textarea>
+  </div>
 </div>
 
 <style>
   .editor-container {
     width: 100%;
-    max-width: 600px;
-    margin: 0 auto;
+    margin-bottom: 0.5rem;
   }
 
   h3 {
-    margin: 0 0 0.5rem;
-    font-size: 1rem;
+    margin: 0 0 0.75rem;
+    font-size: 0.85rem;
+    font-weight: 600;
     color: var(--text);
-    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  h3 svg {
+    color: var(--text-muted);
+  }
+
+  .valid-badge {
+    font-size: 0.65rem;
+    font-weight: 600;
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    background: var(--success-light);
+    color: var(--success);
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+  }
+
+  .error-badge {
+    font-size: 0.7rem;
+    font-weight: 500;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    background: var(--error-light);
+    color: var(--error);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .textarea-wrapper {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.15s ease;
+  }
+
+  .textarea-wrapper:focus-within {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-light);
+  }
+
+  .textarea-wrapper.invalid {
+    border-color: var(--error);
+  }
+
+  .textarea-wrapper.invalid:focus-within {
+    box-shadow: 0 0 0 3px var(--error-light);
   }
 
   textarea {
     width: 100%;
-    padding: 1rem;
+    padding: 0.875rem;
     border: none;
-    border-radius: 15px;
-    background: var(--background);
+    background: var(--background-tertiary);
     color: var(--text);
-    font-family: monospace;
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.8rem;
+    line-height: 1.5;
     resize: vertical;
-    box-shadow: inset 5px 5px 10px var(--shadow-dark),
-                inset -5px -5px 10px var(--shadow-light);
+    min-height: 120px;
+  }
+
+  textarea::placeholder {
+    color: var(--text-muted);
   }
 
   textarea:focus {
     outline: none;
-  }
-
-  .error {
-    color: #e74c3c;
-    margin-top: 0.5rem;
-    font-size: 0.9rem;
-    text-align: left;
-    padding: 0.5rem;
   }
 </style>

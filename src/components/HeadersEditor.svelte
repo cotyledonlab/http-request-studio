@@ -1,6 +1,6 @@
 <script lang="ts">
   type Header = { key: string; value: string; enabled: boolean };
-  
+
   export let headers: Header[] = [
     { key: '', value: '', enabled: true }
   ];
@@ -18,10 +18,9 @@
 
   function toggleHeader(index: number) {
     headers[index].enabled = !headers[index].enabled;
-    headers = [...headers]; // create new array reference to trigger Svelte reactivity
+    headers = [...headers];
   }
 
-  // Common headers for autocomplete
   const commonHeaders = [
     'Authorization',
     'Content-Type',
@@ -35,20 +34,37 @@
 
 <div class="headers-editor">
   <div class="headers-title">
-    <h3>Headers</h3>
-    <button class="add-btn" on:click={addHeader} title="Add header">+</button>
+    <h3>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 6h16"></path>
+        <path d="M4 12h16"></path>
+        <path d="M4 18h12"></path>
+      </svg>
+      Headers
+      <span class="header-count">{headers.filter(h => h.enabled && h.key.trim()).length}</span>
+    </h3>
+    <button class="add-btn" on:click={addHeader} title="Add header" aria-label="Add header">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+    </button>
   </div>
-  
+
   <div class="headers-list">
     {#each headers as header, index}
       <div class="header-row" class:disabled={!header.enabled}>
-        <button 
+        <button
           class="toggle-btn"
           class:active={header.enabled}
           on:click={() => toggleHeader(index)}
-          title={header.enabled ? 'Disable' : 'Enable'}
+          title={header.enabled ? 'Disable header' : 'Enable header'}
+          aria-label={header.enabled ? 'Disable header' : 'Enable header'}
+          aria-pressed={header.enabled}
         >
-          ✓
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
         </button>
         <input
           type="text"
@@ -64,12 +80,16 @@
           placeholder="Value"
           bind:value={header.value}
         />
-        <button 
-          class="remove-btn" 
+        <button
+          class="remove-btn"
           on:click={() => removeHeader(index)}
           title="Remove header"
+          aria-label="Remove header"
         >
-          ×
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
         </button>
       </div>
     {/each}
@@ -85,45 +105,58 @@
 <style>
   .headers-editor {
     width: 100%;
-    margin-bottom: 1rem;
+    margin-bottom: 1.25rem;
   }
 
   .headers-title {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.75rem;
   }
 
   .headers-title h3 {
     margin: 0;
-    font-size: 1rem;
+    font-size: 0.85rem;
+    font-weight: 600;
     color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .headers-title h3 svg {
+    color: var(--text-muted);
+  }
+
+  .header-count {
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.15rem 0.4rem;
+    border-radius: 10px;
+    background: var(--background-tertiary);
+    color: var(--text-secondary);
   }
 
   .add-btn {
     width: 28px;
     height: 28px;
     padding: 0;
-    border: none;
-    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
     background: var(--background);
-    color: var(--text);
-    font-size: 1.2rem;
-    font-weight: bold;
-    box-shadow: 3px 3px 6px var(--shadow-dark),
-                -3px -3px 6px var(--shadow-light);
+    color: var(--text-secondary);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .add-btn:hover {
-    color: #396cd8;
-  }
-
-  .add-btn:active {
-    box-shadow: inset 2px 2px 4px var(--shadow-dark),
-                inset -2px -2px 4px var(--shadow-light);
+    color: var(--primary);
+    border-color: var(--primary);
+    background: var(--primary-light);
   }
 
   .headers-list {
@@ -137,11 +170,14 @@
     align-items: center;
     gap: 0.5rem;
     padding: 0.5rem;
-    border-radius: 8px;
-    background: var(--background);
-    box-shadow: 2px 2px 4px var(--shadow-dark),
-                -2px -2px 4px var(--shadow-light);
-    transition: opacity 0.2s ease;
+    border-radius: 6px;
+    background: var(--background-tertiary);
+    border: 1px solid var(--border-color);
+    transition: all 0.15s ease;
+  }
+
+  .header-row:hover {
+    border-color: var(--border-color-strong);
   }
 
   .header-row.disabled {
@@ -149,61 +185,76 @@
   }
 
   .toggle-btn {
-    width: 24px;
-    height: 24px;
+    width: 22px;
+    height: 22px;
     padding: 0;
-    border: none;
-    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
     background: var(--background);
     color: transparent;
-    font-size: 0.8rem;
-    box-shadow: inset 2px 2px 4px var(--shadow-dark),
-                inset -2px -2px 4px var(--shadow-light);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
   }
 
   .toggle-btn.active {
-    color: #27ae60;
-    box-shadow: 2px 2px 4px var(--shadow-dark),
-                -2px -2px 4px var(--shadow-light);
+    background: var(--success);
+    border-color: var(--success);
+    color: white;
+  }
+
+  .toggle-btn:hover:not(.active) {
+    border-color: var(--success);
   }
 
   .key-input {
     flex: 1;
-    min-width: 120px;
-    padding: 0.4rem 0.6rem;
-    border: none;
-    border-radius: 6px;
+    min-width: 100px;
+    padding: 0.375rem 0.5rem;
+    border: 1px solid transparent;
+    border-radius: 4px;
     background: var(--background);
     color: var(--text);
-    font-family: monospace;
-    font-size: 0.9rem;
-    box-shadow: inset 2px 2px 4px var(--shadow-dark),
-                inset -2px -2px 4px var(--shadow-light);
+    font-family: 'SF Mono', monospace;
+    font-size: 0.8rem;
+    transition: all 0.15s ease;
+  }
+
+  .key-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px var(--primary-light);
   }
 
   .separator {
-    color: var(--text);
-    opacity: 0.5;
+    color: var(--text-muted);
+    font-weight: 500;
   }
 
   .value-input {
     flex: 2;
-    padding: 0.4rem 0.6rem;
-    border: none;
-    border-radius: 6px;
+    padding: 0.375rem 0.5rem;
+    border: 1px solid transparent;
+    border-radius: 4px;
     background: var(--background);
     color: var(--text);
-    font-family: monospace;
-    font-size: 0.9rem;
-    box-shadow: inset 2px 2px 4px var(--shadow-dark),
-                inset -2px -2px 4px var(--shadow-light);
+    font-family: 'SF Mono', monospace;
+    font-size: 0.8rem;
+    transition: all 0.15s ease;
   }
 
-  .key-input:focus,
   .value-input:focus {
     outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px var(--primary-light);
+  }
+
+  .key-input::placeholder,
+  .value-input::placeholder {
+    color: var(--text-muted);
   }
 
   .remove-btn {
@@ -211,22 +262,19 @@
     height: 24px;
     padding: 0;
     border: none;
-    border-radius: 6px;
-    background: var(--background);
-    color: var(--text);
-    font-size: 1.2rem;
-    box-shadow: 2px 2px 4px var(--shadow-dark),
-                -2px -2px 4px var(--shadow-light);
+    border-radius: 4px;
+    background: transparent;
+    color: var(--text-muted);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
   }
 
   .remove-btn:hover {
-    color: #e74c3c;
-  }
-
-  .remove-btn:active {
-    box-shadow: inset 2px 2px 4px var(--shadow-dark),
-                inset -2px -2px 4px var(--shadow-light);
+    color: var(--error);
+    background: var(--error-light);
   }
 </style>

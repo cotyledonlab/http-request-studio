@@ -45,7 +45,8 @@
 </script>
 
 <div class="tree-node" class:root={depth === 0}>
-  <div class="node-row" class:expandable={isExpandable} on:click={toggle} on:keydown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), toggle())} role={isExpandable ? 'button' : undefined} tabindex={isExpandable ? 0 : undefined}>
+  <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+  <div class="node-row" class:expandable={isExpandable} on:click={toggle} on:keydown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), toggle())} role={isExpandable ? 'button' : undefined} tabindex={isExpandable ? 0 : undefined} aria-expanded={isExpandable ? isExpanded : undefined}>
     {#if isExpandable}
       <span class="toggle" class:expanded={isExpanded}>▶</span>
     {:else}
@@ -69,17 +70,17 @@
         <span class="bracket">{isArray ? ']' : '}'}</span>
       {/if}
     {:else}
-      <span class="value {getValueType(data)}" on:click|stopPropagation={copyValue} on:keydown|stopPropagation={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), copyValue())} role="button" tabindex="0" title="Click to copy">
+      <button type="button" class="value {getValueType(data)}" on:click|stopPropagation={copyValue} title="Click to copy" aria-label="Copy value">
         {formatValue(data)}
         {#if copied}
           <span class="copied-badge" transition:slide={{ duration: 200 }}>✓ Copied!</span>
         {/if}
-      </span>
+      </button>
     {/if}
-    
+
     {#if !isLast && !isExpanded}<span class="comma">,</span>{/if}
-    
-    <button class="copy-btn" on:click|stopPropagation={copyValue} title="Copy to clipboard">
+
+    <button class="copy-btn" on:click|stopPropagation={copyValue} title="Copy to clipboard" aria-label="Copy to clipboard">
       {copied ? '✓' : '📋'}
     </button>
   </div>
@@ -110,10 +111,9 @@
   
   .tree-node.root {
     padding: 1rem;
-    border-radius: 12px;
-    background: var(--tree-bg, var(--background));
-    box-shadow: inset 3px 3px 6px var(--shadow-dark),
-                inset -3px -3px 6px var(--shadow-light);
+    border-radius: 8px;
+    background: var(--background-tertiary);
+    border: 1px solid var(--border-color);
     overflow-x: auto;
   }
   
@@ -196,6 +196,12 @@
     border-radius: 3px;
     transition: all 0.15s ease;
     position: relative;
+    /* Reset button styles */
+    background: none;
+    border: none;
+    font-family: inherit;
+    font-size: inherit;
+    text-align: left;
   }
   
   .value:hover {
