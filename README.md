@@ -28,7 +28,11 @@
 - 🔧 **JSON Body Editor** — Rich editor for composing request payloads
 - 🌳 **JSON Tree Viewer** — Collapsible, syntax-highlighted response visualization
 - 📊 **Response Details** — Status codes, timing metrics, and response headers at a glance
-- 📁 **File Explorer** — Organize your requests into folders *(coming soon)*
+- 📁 **Collections** — Save requests into folders with drag-and-drop organization
+- 🕘 **Request History** — Searchable history with copy-as-cURL actions
+- 🌐 **Environment Variables** — `{{VARIABLE}}` substitution across URL, headers, and body
+- 💾 **Save/Load Requests** — Save current requests with dirty state indicators
+- 🔁 **Request Echo** — View the exact request body alongside the response
 - 📋 **Click-to-Copy** — Copy any JSON value with a single click
 
 ## 📸 Preview
@@ -70,14 +74,16 @@ npm run tauri build
 2. **Choose Method** — Select GET, POST, PUT, DELETE, etc.
 3. **Add Headers** — Configure custom headers (Content-Type, Authorization, etc.)
 4. **Write Body** — For POST/PUT/PATCH, compose your JSON payload
-5. **Send Request** — Click "Send Request" and view the response
-6. **Explore Response** — Navigate the JSON tree, copy values, inspect headers
+5. **Pick Environment** — Select an environment to substitute `{{VARIABLE}}` values
+6. **Send Request** — Click "Send Request" and view the response
+7. **Save & Organize** — Save requests into collections and folders
+8. **Review History** — Re-run or copy past requests from the history panel
 
 ## 🎯 Roadmap
 
-- [ ] Save/load request collections
-- [ ] Environment variables
-- [ ] Request history
+- [x] Save/load request collections
+- [x] Environment variables
+- [x] Request history
 - [ ] Import from cURL/Postman
 - [ ] GraphQL support
 - [ ] WebSocket testing

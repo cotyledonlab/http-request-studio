@@ -37,9 +37,9 @@ This specification outlines the next major development phase for HTTP Request St
 
 ### Technical Debt to Address
 
-1. **Unused Dependency** - Remove `svelte-jsoneditor` from package.json (never imported)
-2. **Missing HTTP Methods** - HEAD/OPTIONS buttons not in UI (backend supports them)
-3. **No Request Echo** - Sent request body not visible in response view
+- [x] **Unused Dependency** - Remove `svelte-jsoneditor` from package.json (never imported)
+- [x] **Missing HTTP Methods** - HEAD/OPTIONS buttons not in UI (backend supports them)
+- [x] **No Request Echo** - Sent request body not visible in response view
 
 ---
 
@@ -523,54 +523,54 @@ Extend existing design system for new components:
 
 ### Phase 2.1: Foundation (Week 1)
 
-1. Set up `src/lib/` directory structure
-2. Create shared types in `types.ts`
-3. Implement reusable Modal and ConfirmDialog components
-4. Add Rust filesystem utilities for app data directory
-5. Remove unused `svelte-jsoneditor` dependency
-6. Add HEAD/OPTIONS method buttons to UI
+- [x] Set up `src/lib/` directory structure
+- [x] Create shared types in `types.ts`
+- [x] Implement reusable Modal and ConfirmDialog components
+- [x] Add Rust filesystem utilities for app data directory
+- [x] Remove unused `svelte-jsoneditor` dependency
+- [x] Add HEAD/OPTIONS method buttons to UI
 
 ### Phase 2.2: Request History (Week 2)
 
-1. Implement `historyStore.ts` with localStorage
-2. Create `HistoryPanel.svelte` component
-3. Integrate history recording into request flow
-4. Add date grouping and search/filter
-5. Implement context menu actions
+- [x] Implement `historyStore.ts` with localStorage
+- [x] Create `HistoryPanel.svelte` component
+- [x] Integrate history recording into request flow
+- [x] Add date grouping and search/filter
+- [x] Implement context menu actions
 
 ### Phase 2.3: Collections Backend (Week 3)
 
-1. Define Rust structs for collections
-2. Implement Tauri CRUD commands
-3. Create `collectionsStore.ts`
-4. Set up filesystem persistence
+- [x] Define Rust structs for collections
+- [x] Implement Tauri CRUD commands
+- [x] Create `collectionsStore.ts`
+- [x] Set up filesystem persistence
 
 ### Phase 2.4: Collections UI (Week 4)
 
-1. Refactor `FileExplorer.svelte` to use store
-2. Implement folder/request CRUD operations
-3. Add drag-and-drop reordering
-4. Create `SaveRequestModal.svelte`
-5. Implement save/load request flows
+- [x] Refactor `FileExplorer.svelte` to use store
+- [x] Implement folder/request CRUD operations
+- [x] Add drag-and-drop reordering
+- [x] Create `SaveRequestModal.svelte`
+- [x] Implement save/load request flows
 
 ### Phase 2.5: Environment Variables (Week 5)
 
-1. Implement environment Tauri commands
-2. Create `environmentStore.ts`
-3. Build `EnvironmentSelector.svelte`
-4. Build `EnvironmentManager.svelte`
-5. Implement variable substitution logic
-6. Add syntax highlighting for variables
-7. Integrate into request flow
+- [x] Implement environment Tauri commands
+- [x] Create `environmentStore.ts`
+- [x] Build `EnvironmentSelector.svelte`
+- [x] Build `EnvironmentManager.svelte`
+- [x] Implement variable substitution logic
+- [x] Add syntax highlighting for variables
+- [x] Integrate into request flow
 
 ### Phase 2.6: Polish & Testing (Week 6)
 
-1. Keyboard shortcuts implementation
-2. Unsaved changes warnings
-3. Error handling improvements
-4. Manual testing across platforms
-5. Performance optimization
-6. Documentation updates
+- [x] Keyboard shortcuts implementation
+- [x] Unsaved changes warnings
+- [ ] Error handling improvements
+- [ ] Manual testing across platforms
+- [ ] Performance optimization
+- [x] Documentation updates
 
 ---
 

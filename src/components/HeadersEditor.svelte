@@ -4,6 +4,7 @@
   export let headers: Header[] = [
     { key: '', value: '', enabled: true }
   ];
+  export let variables: Record<string, string> = {};
 
   function addHeader() {
     headers = [...headers, { key: '', value: '', enabled: true }];
@@ -30,6 +31,25 @@
     'Cache-Control',
     'User-Agent'
   ];
+
+  function escapeHtml(value: string): string {
+    return value
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/\"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function highlightVariables(value: string, vars: Record<string, string>): string {
+    if (!value) return '';
+    const escaped = escapeHtml(value);
+    return escaped.replace(/\{\{(\w+)\}\}/g, (match, key) => {
+      const resolved = Object.prototype.hasOwnProperty.call(vars, key);
+      const className = resolved ? 'variable' : 'variable unresolved';
+      return `<span class=\"${className}\">${match}</span>`;
+    });
+  }
 </script>
 
 <div class="headers-editor">
@@ -66,20 +86,30 @@
             <polyline points="20 6 9 17 4 12"></polyline>
           </svg>
         </button>
-        <input
-          type="text"
-          class="key-input"
-          placeholder="Header name"
-          bind:value={header.key}
-          list="common-headers"
-        />
+        <div class="input-wrapper key">
+          <div class="input-highlight" aria-hidden="true">
+            {@html highlightVariables(header.key, variables)}
+          </div>
+          <input
+            type="text"
+            class="key-input"
+            placeholder="Header name"
+            bind:value={header.key}
+            list="common-headers"
+          />
+        </div>
         <span class="separator">:</span>
-        <input
-          type="text"
-          class="value-input"
-          placeholder="Value"
-          bind:value={header.value}
-        />
+        <div class="input-wrapper value">
+          <div class="input-highlight" aria-hidden="true">
+            {@html highlightVariables(header.value, variables)}
+          </div>
+          <input
+            type="text"
+            class="value-input"
+            placeholder="Value"
+            bind:value={header.value}
+          />
+        </div>
         <button
           class="remove-btn"
           on:click={() => removeHeader(index)}
@@ -210,13 +240,49 @@
     border-color: var(--success);
   }
 
-  .key-input {
+  .input-wrapper {
+    position: relative;
     flex: 1;
-    min-width: 100px;
-    padding: 0.375rem 0.5rem;
+    min-width: 80px;
     border: 1px solid transparent;
     border-radius: 4px;
     background: var(--background);
+  }
+
+  .input-wrapper.value {
+    flex: 2;
+  }
+
+  .input-wrapper:focus-within {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px var(--primary-light);
+  }
+
+  .input-highlight {
+    position: absolute;
+    inset: 0;
+    padding: 0.375rem 0.5rem;
+    font-family: 'SF Mono', monospace;
+    font-size: 0.8rem;
+    white-space: pre;
+    pointer-events: none;
+    color: transparent;
+  }
+
+  .input-highlight :global(.variable) {
+    background: var(--color-variable);
+    border-radius: 3px;
+  }
+
+  .input-highlight :global(.variable.unresolved) {
+    background: var(--color-variable-unresolved);
+  }
+
+  .key-input {
+    width: 100%;
+    padding: 0.375rem 0.5rem;
+    border: none;
+    background: transparent;
     color: var(--text);
     font-family: 'SF Mono', monospace;
     font-size: 0.8rem;
@@ -225,8 +291,6 @@
 
   .key-input:focus {
     outline: none;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 2px var(--primary-light);
   }
 
   .separator {
@@ -235,11 +299,10 @@
   }
 
   .value-input {
-    flex: 2;
+    width: 100%;
     padding: 0.375rem 0.5rem;
-    border: 1px solid transparent;
-    border-radius: 4px;
-    background: var(--background);
+    border: none;
+    background: transparent;
     color: var(--text);
     font-family: 'SF Mono', monospace;
     font-size: 0.8rem;
@@ -248,8 +311,6 @@
 
   .value-input:focus {
     outline: none;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 2px var(--primary-light);
   }
 
   .key-input::placeholder,

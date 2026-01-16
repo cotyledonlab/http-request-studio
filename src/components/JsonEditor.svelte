@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
 
   export let value: Record<string, unknown> = {};
+  export let variables: Record<string, string> = {};
 
   let editor: HTMLTextAreaElement;
   let isValidJson = true;
@@ -24,6 +25,25 @@
     }
   }
 
+  function escapeHtml(value: string): string {
+    return value
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/\"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function highlightVariables(value: string, vars: Record<string, string>): string {
+    if (!value) return '';
+    const escaped = escapeHtml(value);
+    return escaped.replace(/\{\{(\w+)\}\}/g, (match, key) => {
+      const resolved = Object.prototype.hasOwnProperty.call(vars, key);
+      const className = resolved ? 'variable' : 'variable unresolved';
+      return `<span class=\"${className}\">${match}</span>`;
+    });
+  }
+
   $: if (editor) {
     const nextInternalValue = JSON.stringify(value, null, 2);
     if (nextInternalValue !== internalValue) {
@@ -31,6 +51,8 @@
       editor.value = internalValue;
     }
   }
+
+  $: highlightedBody = highlightVariables(internalValue, variables);
 </script>
 
 <div class="editor-container">
@@ -54,6 +76,9 @@
     {/if}
   </h3>
   <div class="textarea-wrapper" class:invalid={!isValidJson}>
+    <div class="textarea-highlight" aria-hidden="true">
+      {@html highlightedBody}
+    </div>
     <textarea
       bind:this={editor}
       on:input={handleInput}
@@ -112,6 +137,8 @@
     border-radius: 8px;
     overflow: hidden;
     transition: all 0.15s ease;
+    position: relative;
+    background: var(--background-tertiary);
   }
 
   .textarea-wrapper:focus-within {
@@ -131,13 +158,34 @@
     width: 100%;
     padding: 0.875rem;
     border: none;
-    background: var(--background-tertiary);
+    background: transparent;
     color: var(--text);
     font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
     font-size: 0.8rem;
     line-height: 1.5;
     resize: vertical;
     min-height: 120px;
+  }
+
+  .textarea-highlight {
+    position: absolute;
+    inset: 0;
+    padding: 0.875rem;
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    pointer-events: none;
+    color: transparent;
+  }
+
+  .textarea-highlight :global(.variable) {
+    background: var(--color-variable);
+    border-radius: 4px;
+  }
+
+  .textarea-highlight :global(.variable.unresolved) {
+    background: var(--color-variable-unresolved);
   }
 
   textarea::placeholder {

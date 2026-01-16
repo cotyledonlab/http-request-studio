@@ -52,7 +52,11 @@ http-request-studio/
 │   │   ├── JsonEditor.svelte     # JSON body editor with validation
 │   │   ├── JsonTreeViewer.svelte # Interactive JSON response tree
 │   │   ├── RequestStatus.svelte  # Loading/error/success states
-│   │   ├── FileExplorer.svelte   # Collections sidebar (UI stub only)
+│   │   ├── FileExplorer.svelte   # Collections sidebar
+│   │   ├── history/              # History panel
+│   │   ├── collections/          # Save modal + collection tree
+│   │   ├── environments/         # Environment selector + manager
+│   │   ├── shared/               # Modal/context menu/confirm dialog
 │   │   └── ThemeToggle.svelte    # Dark/light mode toggle
 │   └── app.html                  # HTML template
 ├── src-tauri/                    # Rust backend
@@ -95,17 +99,19 @@ npm run dev
 - Interactive JSON response tree viewer
 - Response headers display
 - Request timing metrics
+- Request history with search and copy-as-cURL
+- Collections with folders, drag-and-drop ordering, and import/export
+- Save/load requests with dirty-state indicators
+- Environment variables with substitution and highlighting
+- Request body echo in response view
 - Dark/light theme with localStorage persistence
 - Click-to-copy for JSON values
 
 ### Not Yet Implemented (see SPEC.md)
-- Request history
-- Save/load request collections
-- Environment variables
-- FileExplorer integration (UI exists, no backend)
 - Import from cURL/Postman
 - GraphQL support
 - WebSocket testing
+ - Authentication helpers
 
 ## Key Files to Understand
 
@@ -169,9 +175,7 @@ CSS variables enable theming:
 
 ## Known Issues / Technical Debt
 
-1. **Unused dependency**: `svelte-jsoneditor` is in package.json but never imported
-2. **Missing UI**: HEAD and OPTIONS method buttons not shown (backend supports them)
-3. **FileExplorer stub**: Component renders mock data, has no backend integration
+1. **No native file picker**: Import/export uses manual path prompts (dialog plugin pending)
 
 ## Testing
 
@@ -194,6 +198,7 @@ See `SPEC.md` for the detailed Phase 2 development plan covering:
 - Follow existing neumorphic design patterns
 - Test on both dark and light themes
 - Prefer editing existing files over creating new ones
+- When work is completed, update `README.md` and `AGENTS.md`, check off completed work in `SPEC.md`, then commit and push as the final step
 
 ## Quick Context for Common Tasks
 
@@ -214,4 +219,4 @@ See `SPEC.md` for the detailed Phase 2 development plan covering:
 
 ---
 
-*Last updated: January 2025*
+*Last updated: January 2026*
