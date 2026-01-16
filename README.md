@@ -45,7 +45,7 @@ The app features a clean, modern interface with neumorphic design elements:
 
 - [Node.js](https://nodejs.org/) (v18+)
 - [Rust](https://rustup.rs/)
-- [Tauri CLI](https://tauri.app/v1/guides/getting-started/prerequisites)
+- [Tauri CLI](https://tauri.app/v2/guides/prerequisites/)
 
 ### Build from Source
 
