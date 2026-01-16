@@ -8,6 +8,8 @@
     activeCollectionId,
     collectionDirty,
     collectionsLoading,
+    collectionsError,
+    clearCollectionsError,
     refreshCollections,
     openCollection,
     createCollection,
@@ -72,8 +74,12 @@
     if (!pendingCollectionId) return;
     if (saveChanges && active) {
       await persistActiveCollection();
+      if ($collectionDirty) {
+        return;
+      }
     }
-    await openCollection(pendingCollectionId);
+    const opened = await openCollection(pendingCollectionId);
+    if (!opened) return;
     pendingCollectionId = null;
     showUnsavedPrompt = false;
   }
@@ -81,11 +87,11 @@
   async function handleCreateCollection() {
     const name = newCollectionName.trim();
     if (!name) return;
-    await createCollection(name, newCollectionDescription.trim() || undefined);
+    const created = await createCollection(name, newCollectionDescription.trim() || undefined);
+    if (!created) return;
     newCollectionName = '';
     newCollectionDescription = '';
     showNewCollectionModal = false;
-    await refreshCollections();
   }
 
   function startRename(itemId: string, name: string) {
@@ -125,7 +131,6 @@
       if (collection) {
         const updated: Collection = { ...collection, name: name.trim(), updatedAt: Date.now() };
         await saveCollection(updated);
-        await refreshCollections();
       }
     }
   }
@@ -220,8 +225,9 @@
         const path = window.prompt('Import collection path');
         if (path) {
           const collection = await importCollection(path);
-          await openCollection(collection.id);
-          await refreshCollections();
+          if (collection) {
+            await openCollection(collection.id);
+          }
         }
       }
     }
@@ -312,6 +318,12 @@
   </div>
 
   <div class="collections-list">
+    {#if $collectionsError}
+      <div class="explorer-error">
+        <span>{$collectionsError}</span>
+        <button class="dismiss" on:click={clearCollectionsError} aria-label="Dismiss error">x</button>
+      </div>
+    {/if}
     {#if $collectionsLoading}
       <p class="empty">Loading collections...</p>
     {:else if $collectionsStore.length === 0}
@@ -502,6 +514,27 @@
     border-bottom: 1px solid var(--border-color);
     max-height: 200px;
     overflow-y: auto;
+  }
+
+  .explorer-error {
+    padding: 0.5rem 0.6rem;
+    border-radius: 6px;
+    background: var(--error-light);
+    color: var(--error);
+    border: 1px solid var(--error);
+    font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .explorer-error .dismiss {
+    border: none;
+    background: transparent;
+    color: inherit;
+    padding: 0;
+    cursor: pointer;
   }
 
   .collection-item {

@@ -6,6 +6,8 @@
   import {
     environmentsStore,
     activeEnvironmentId,
+    environmentsError,
+    clearEnvironmentsError,
     createEnvironment,
     updateEnvironment,
     deleteEnvironment,
@@ -114,6 +116,12 @@
 </script>
 
 <Modal {open} title="Manage Environments" on:close={() => (open = false)}>
+  {#if $environmentsError}
+    <div class="env-error">
+      <span>{$environmentsError}</span>
+      <button class="dismiss" on:click={clearEnvironmentsError} aria-label="Dismiss error">✕</button>
+    </div>
+  {/if}
   <div class="layout">
     <div class="sidebar">
       <div class="sidebar-header">
@@ -208,6 +216,28 @@
     display: grid;
     grid-template-columns: 200px 1fr;
     gap: 1.5rem;
+  }
+
+  .env-error {
+    margin-bottom: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    background: var(--error-light);
+    color: var(--error);
+    border: 1px solid var(--error);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  .env-error .dismiss {
+    border: none;
+    background: transparent;
+    color: inherit;
+    padding: 0;
+    cursor: pointer;
   }
 
   .sidebar {

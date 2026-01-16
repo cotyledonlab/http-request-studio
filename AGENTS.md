@@ -106,6 +106,8 @@ npm run dev
 - Request body echo in response view
 - Dark/light theme with localStorage persistence
 - Click-to-copy for JSON values
+- JSON validation blocks invalid request bodies
+- Storage error alerts for collections, environments, and history
 
 ### Not Yet Implemented (see SPEC.md)
 - Import from cURL/Postman
@@ -198,7 +200,7 @@ See `SPEC.md` for the detailed Phase 2 development plan covering:
 - Follow existing neumorphic design patterns
 - Test on both dark and light themes
 - Prefer editing existing files over creating new ones
-- When work is completed, update `README.md` and `AGENTS.md`, check off completed work in `SPEC.md`, then commit and push as the final step
+- When work is completed, complete the steps described here every time: update `README.md` and `AGENTS.md`, check off completed work in `SPEC.md`, then commit and push as the final step
 
 ## Quick Context for Common Tasks
 

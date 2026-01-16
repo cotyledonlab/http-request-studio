@@ -57,6 +57,7 @@
   let lastRequestBody: string | null = null;
   let lastRequestBodyJson: unknown = null;
   let isJsonRequestBody = false;
+  let isJsonBodyValid = true;
 
   let showHistory = true;
   let showCollections = true;
@@ -76,6 +77,7 @@
   let urlInputRef: HTMLInputElement | null = null;
   let saveFolderId: string | null = null;
   let saveDefaultName = '';
+  const invalidJsonMessage = 'Invalid JSON body. Fix before sending.';
 
   const methodsWithBody: HttpMethod[] = ['POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'];
 
@@ -91,6 +93,12 @@
   $: displayRequestName = currentRequest?.name ?? 'Untitled Request';
   $: currentPayloadHash = JSON.stringify(buildRequestPayload());
   $: isDirty = currentPayloadHash !== baselineHash;
+  $: if (!methodsWithBody.includes(requestMethod)) {
+    isJsonBodyValid = true;
+  }
+  $: if (isJsonBodyValid && error === invalidJsonMessage) {
+    error = null;
+  }
 
   onMount(() => {
     void loadEnvironments();
@@ -215,6 +223,11 @@
   }
 
   async function sendRequest() {
+    if (methodsWithBody.includes(requestMethod) && !isJsonBodyValid) {
+      error = invalidJsonMessage;
+      lastRequestTime = null;
+      return;
+    }
     const originalPayload = buildRequestPayload();
     const resolved = resolveRequest(originalPayload);
 
@@ -323,6 +336,7 @@
     } else {
       jsonData = {};
     }
+    isJsonBodyValid = true;
 
     currentRequest = saved;
     currentCollectionId = collectionId;
@@ -338,7 +352,8 @@
     if (!$activeCollection) {
       const name = window.prompt('Create a collection to save this request');
       if (!name) return;
-      await createCollection(name.trim());
+      const created = await createCollection(name.trim());
+      if (!created) return;
     }
 
     saveFolderId = null;
@@ -435,6 +450,7 @@
       { key: '', value: '', enabled: true }
     ];
     jsonData = {};
+    isJsonBodyValid = true;
     currentRequest = null;
     currentCollectionId = null;
     markClean();
@@ -505,7 +521,7 @@
       <UrlConfig bind:url={requestUrl} bind:method={requestMethod} bind:inputRef={urlInputRef} variables={activeVariables} />
       <HeadersEditor bind:headers={headers} variables={activeVariables} />
       {#if methodsWithBody.includes(requestMethod)}
-        <JsonEditor bind:value={jsonData} variables={activeVariables} />
+        <JsonEditor bind:value={jsonData} bind:isValid={isJsonBodyValid} variables={activeVariables} />
       {/if}
       <button class="send-btn" on:click={sendRequest} disabled={loading}>
         {#if loading}
@@ -519,7 +535,7 @@
           Send
         {/if}
       </button>
-      <RequestStatus {loading} {error} {lastRequestTime} />
+      <RequestStatus {loading} bind:error {lastRequestTime} />
       {#if statusCode !== null || error}
         <div class="response-section">
           <div class="response-meta">

@@ -26,6 +26,7 @@
 - 📝 **Full HTTP Support** — GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS methods
 - 📋 **Headers Editor** — Add, edit, enable/disable custom request headers with autocomplete
 - 🔧 **JSON Body Editor** — Rich editor for composing request payloads
+- ✅ **JSON Validation** — Blocks sending invalid JSON bodies
 - 🌳 **JSON Tree Viewer** — Collapsible, syntax-highlighted response visualization
 - 📊 **Response Details** — Status codes, timing metrics, and response headers at a glance
 - 📁 **Collections** — Save requests into folders with drag-and-drop organization
@@ -34,6 +35,7 @@
 - 💾 **Save/Load Requests** — Save current requests with dirty state indicators
 - 🔁 **Request Echo** — View the exact request body alongside the response
 - 📋 **Click-to-Copy** — Copy any JSON value with a single click
+- 🧯 **Resilient Storage** — Surface collection/environment/history errors
 
 ## 📸 Preview
 

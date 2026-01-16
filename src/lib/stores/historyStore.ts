@@ -3,6 +3,20 @@ import type { HistoryEntry } from '../types';
 
 const STORAGE_KEY = 'hrs:history';
 const DEFAULT_LIMIT = 100;
+const SAVE_DELAY_MS = 300;
+let saveTimeout: ReturnType<typeof setTimeout> | null = null;
+
+export const historyError = writable<string | null>(null);
+
+function toErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof Error) {
+    return error.message || fallback;
+  }
+  if (typeof error === 'string') {
+    return error || fallback;
+  }
+  return fallback;
+}
 
 function loadHistory(): HistoryEntry[] {
   if (typeof localStorage === 'undefined') {
@@ -15,19 +29,33 @@ function loadHistory(): HistoryEntry[] {
     const parsed = JSON.parse(raw) as HistoryEntry[];
     return Array.isArray(parsed) ? parsed : [];
   } catch {
+    historyError.set('Failed to load history from storage.');
     return [];
   }
 }
 
 function saveHistory(entries: HistoryEntry[]) {
   if (typeof localStorage === 'undefined') return;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+    historyError.set(null);
+  } catch (error) {
+    historyError.set(toErrorMessage(error, 'Failed to save history.'));
+  }
 }
 
 export const historyStore = writable<HistoryEntry[]>(loadHistory());
 
 if (typeof localStorage !== 'undefined') {
-  historyStore.subscribe((entries) => saveHistory(entries));
+  historyStore.subscribe((entries) => {
+    if (saveTimeout) {
+      clearTimeout(saveTimeout);
+    }
+    saveTimeout = setTimeout(() => {
+      saveTimeout = null;
+      saveHistory(entries);
+    }, SAVE_DELAY_MS);
+  });
 }
 
 export function addHistoryEntry(entry: HistoryEntry, limit = DEFAULT_LIMIT) {
@@ -52,4 +80,8 @@ export function updateHistoryEntry(id: string, updater: (entry: HistoryEntry) =>
   historyStore.update((entries) =>
     entries.map((entry) => (entry.id === id ? updater(entry) : entry))
   );
+}
+
+export function clearHistoryError() {
+  historyError.set(null);
 }

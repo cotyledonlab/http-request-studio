@@ -6,13 +6,45 @@ import { createId } from '../utils/uuid';
 export const environmentsStore = writable<Environment[]>([]);
 export const activeEnvironmentId = writable<string | null>(null);
 export const environmentsLoading = writable<boolean>(false);
+export const environmentsError = writable<string | null>(null);
+
+const SAVE_DELAY_MS = 400;
+let saveTimeout: ReturnType<typeof setTimeout> | null = null;
+
+function toErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof Error) {
+    return error.message || fallback;
+  }
+  if (typeof error === 'string') {
+    return error || fallback;
+  }
+  return fallback;
+}
+
+function reportEnvironmentsError(error: unknown, fallback: string) {
+  environmentsError.set(toErrorMessage(error, fallback));
+}
+
+function queueSave() {
+  if (saveTimeout) {
+    clearTimeout(saveTimeout);
+  }
+  saveTimeout = setTimeout(() => {
+    saveTimeout = null;
+    void saveEnvironments();
+  }, SAVE_DELAY_MS);
+}
 
 export async function loadEnvironments() {
   environmentsLoading.set(true);
+  environmentsError.set(null);
   try {
     const state = await invoke<EnvironmentState>('load_environments');
     environmentsStore.set(state.environments);
     activeEnvironmentId.set(state.activeEnvironmentId ?? null);
+    environmentsError.set(null);
+  } catch (error) {
+    reportEnvironmentsError(error, 'Failed to load environments.');
   } finally {
     environmentsLoading.set(false);
   }
@@ -23,12 +55,17 @@ export async function saveEnvironments() {
     environments: get(environmentsStore),
     activeEnvironmentId: get(activeEnvironmentId)
   };
-  await invoke('save_environments', { state });
+  try {
+    await invoke('save_environments', { state });
+    environmentsError.set(null);
+  } catch (error) {
+    reportEnvironmentsError(error, 'Failed to save environments.');
+  }
 }
 
 export function setActiveEnvironment(id: string | null) {
   activeEnvironmentId.set(id);
-  void saveEnvironments();
+  queueSave();
 }
 
 export function createEnvironment(name: string) {
@@ -42,7 +79,7 @@ export function createEnvironment(name: string) {
   };
   environmentsStore.update((list) => [env, ...list]);
   activeEnvironmentId.set(env.id);
-  void saveEnvironments();
+  queueSave();
   return env;
 }
 
@@ -50,7 +87,7 @@ export function updateEnvironment(id: string, updater: (env: Environment) => Env
   environmentsStore.update((list) =>
     list.map((env) => (env.id === id ? updater(env) : env))
   );
-  void saveEnvironments();
+  queueSave();
 }
 
 export function deleteEnvironment(id: string) {
@@ -58,7 +95,7 @@ export function deleteEnvironment(id: string) {
   if (get(activeEnvironmentId) === id) {
     activeEnvironmentId.set(null);
   }
-  void saveEnvironments();
+  queueSave();
 }
 
 export function duplicateEnvironment(id: string) {
@@ -73,17 +110,34 @@ export function duplicateEnvironment(id: string) {
     updatedAt: now
   };
   environmentsStore.update((list) => [copy, ...list]);
-  void saveEnvironments();
+  queueSave();
   return copy;
 }
 
 export async function exportEnvironments(path: string) {
-  await invoke('export_environments', { path });
+  try {
+    await invoke('export_environments', { path });
+    environmentsError.set(null);
+    return true;
+  } catch (error) {
+    reportEnvironmentsError(error, 'Failed to export environments.');
+    return false;
+  }
 }
 
 export async function importEnvironments(path: string) {
-  const state = await invoke<EnvironmentState>('import_environments', { path });
-  environmentsStore.set(state.environments);
-  activeEnvironmentId.set(state.activeEnvironmentId ?? null);
-  return state;
+  try {
+    const state = await invoke<EnvironmentState>('import_environments', { path });
+    environmentsStore.set(state.environments);
+    activeEnvironmentId.set(state.activeEnvironmentId ?? null);
+    environmentsError.set(null);
+    return state;
+  } catch (error) {
+    reportEnvironmentsError(error, 'Failed to import environments.');
+    return null;
+  }
+}
+
+export function clearEnvironmentsError() {
+  environmentsError.set(null);
 }

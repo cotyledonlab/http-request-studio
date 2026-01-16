@@ -1,6 +1,12 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
-  import { historyStore, clearHistory, removeHistoryEntry } from '../../lib/stores/historyStore';
+  import {
+    historyStore,
+    clearHistory,
+    removeHistoryEntry,
+    historyError,
+    clearHistoryError
+  } from '../../lib/stores/historyStore';
   import { formatDate, formatTime, getHistoryGroup } from '../../lib/utils/dateUtils';
   import type { HistoryEntry, HttpMethod } from '../../lib/types';
   import ContextMenu from '../shared/ContextMenu.svelte';
@@ -28,6 +34,7 @@
   let menuY = 0;
   let menuEntry: HistoryEntry | null = null;
   let showClearConfirm = false;
+  let copyError: string | null = null;
 
   function toggleCollapse() {
     collapsed = !collapsed;
@@ -67,7 +74,12 @@
       const bodyValue = escapeSingleQuotes(req.body);
       parts.push(`--data '${bodyValue}'`);
     }
-    await navigator.clipboard.writeText(parts.join(' '));
+    try {
+      await navigator.clipboard.writeText(parts.join(' '));
+      copyError = null;
+    } catch (error) {
+      copyError = error instanceof Error ? error.message : 'Failed to copy to clipboard.';
+    }
   }
 
   function selectEntry(entry: HistoryEntry) {
@@ -129,6 +141,24 @@
   </div>
 
   {#if !collapsed}
+    {#if copyError || $historyError}
+      <div class="panel-error">
+        <span>{copyError ?? $historyError}</span>
+        <button
+          class="dismiss"
+          aria-label="Dismiss error"
+          on:click={() => {
+            if (copyError) {
+              copyError = null;
+            } else {
+              clearHistoryError();
+            }
+          }}
+        >
+          x
+        </button>
+      </div>
+    {/if}
     <div class="controls">
       <input
         type="text"
@@ -376,5 +406,27 @@
     color: var(--error);
     border-color: var(--error);
     background: var(--error-light);
+  }
+
+  .panel-error {
+    margin: 0.5rem 1rem 0;
+    padding: 0.5rem 0.65rem;
+    border-radius: 6px;
+    background: var(--error-light);
+    color: var(--error);
+    border: 1px solid var(--error);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  .panel-error .dismiss {
+    border: none;
+    background: transparent;
+    color: inherit;
+    padding: 0;
+    cursor: pointer;
   }
 </style>

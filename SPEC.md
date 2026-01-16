@@ -567,9 +567,9 @@ Extend existing design system for new components:
 
 - [x] Keyboard shortcuts implementation
 - [x] Unsaved changes warnings
-- [ ] Error handling improvements
+- [x] Error handling improvements
 - [ ] Manual testing across platforms
-- [ ] Performance optimization
+- [x] Performance optimization
 - [x] Documentation updates
 
 ---

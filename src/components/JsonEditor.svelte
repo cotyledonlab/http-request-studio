@@ -3,9 +3,9 @@
 
   export let value: Record<string, unknown> = {};
   export let variables: Record<string, string> = {};
+  export let isValid = true;
 
   let editor: HTMLTextAreaElement;
-  let isValidJson = true;
   let internalValue = '';
 
   onMount(() => {
@@ -19,9 +19,9 @@
     const newValue = (event.target as HTMLTextAreaElement).value;
     try {
       value = JSON.parse(newValue);
-      isValidJson = true;
+      isValid = true;
     } catch (e) {
-      isValidJson = false;
+      isValid = false;
     }
   }
 
@@ -62,7 +62,7 @@
       <polyline points="8 6 2 12 8 18"></polyline>
     </svg>
     Body
-    {#if !isValidJson}
+    {#if !isValid}
       <span class="error-badge">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="12" cy="12" r="10"></circle>
@@ -75,7 +75,7 @@
       <span class="valid-badge">JSON</span>
     {/if}
   </h3>
-  <div class="textarea-wrapper" class:invalid={!isValidJson}>
+  <div class="textarea-wrapper" class:invalid={!isValid}>
     <div class="textarea-highlight" aria-hidden="true">
       {@html highlightedBody}
     </div>
