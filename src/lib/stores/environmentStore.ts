@@ -1,5 +1,5 @@
 import { writable, get } from 'svelte/store';
-import { safeInvoke } from '../utils/tauri';
+import { isTauri, safeInvoke } from '../utils/tauri';
 import type { Environment, EnvironmentState } from '../types';
 import { createId } from '../utils/uuid';
 
@@ -8,6 +8,7 @@ export const activeEnvironmentId = writable<string | null>(null);
 export const environmentsLoading = writable<boolean>(false);
 export const environmentsError = writable<string | null>(null);
 
+const STORAGE_KEY = 'hrs:environments';
 const SAVE_DELAY_MS = 400;
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 
@@ -25,6 +26,38 @@ function reportEnvironmentsError(error: unknown, fallback: string) {
   environmentsError.set(toErrorMessage(error, fallback));
 }
 
+function loadEnvironmentState(): EnvironmentState {
+  if (typeof localStorage === 'undefined') {
+    return { environments: [], activeEnvironmentId: null };
+  }
+
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return { environments: [], activeEnvironmentId: null };
+    const parsed = JSON.parse(raw) as EnvironmentState;
+    if (!parsed || !Array.isArray(parsed.environments)) {
+      return { environments: [], activeEnvironmentId: null };
+    }
+    return {
+      environments: parsed.environments,
+      activeEnvironmentId: parsed.activeEnvironmentId ?? null
+    };
+  } catch (error) {
+    reportEnvironmentsError(error, 'Failed to load environments.');
+    return { environments: [], activeEnvironmentId: null };
+  }
+}
+
+function saveEnvironmentState(state: EnvironmentState) {
+  if (typeof localStorage === 'undefined') return;
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    environmentsError.set(null);
+  } catch (error) {
+    reportEnvironmentsError(error, 'Failed to save environments.');
+  }
+}
+
 function queueSave() {
   if (saveTimeout) {
     clearTimeout(saveTimeout);
@@ -38,6 +71,13 @@ function queueSave() {
 export async function loadEnvironments() {
   environmentsLoading.set(true);
   environmentsError.set(null);
+  if (!isTauri()) {
+    const state = loadEnvironmentState();
+    environmentsStore.set(state.environments);
+    activeEnvironmentId.set(state.activeEnvironmentId ?? null);
+    environmentsLoading.set(false);
+    return;
+  }
   try {
     const state = await safeInvoke<EnvironmentState>('load_environments');
     environmentsStore.set(state.environments);
@@ -55,6 +95,10 @@ export async function saveEnvironments() {
     environments: get(environmentsStore),
     activeEnvironmentId: get(activeEnvironmentId)
   };
+  if (!isTauri()) {
+    saveEnvironmentState(state);
+    return;
+  }
   try {
     await safeInvoke('save_environments', { state });
     environmentsError.set(null);
@@ -115,6 +159,13 @@ export function duplicateEnvironment(id: string) {
 }
 
 export async function exportEnvironments(path: string) {
+  if (!isTauri()) {
+    reportEnvironmentsError(
+      'Export is only available in the desktop app.',
+      'Failed to export environments.'
+    );
+    return false;
+  }
   try {
     await safeInvoke('export_environments', { path });
     environmentsError.set(null);
@@ -126,6 +177,13 @@ export async function exportEnvironments(path: string) {
 }
 
 export async function importEnvironments(path: string) {
+  if (!isTauri()) {
+    reportEnvironmentsError(
+      'Import is only available in the desktop app.',
+      'Failed to import environments.'
+    );
+    return null;
+  }
   try {
     const state = await safeInvoke<EnvironmentState>('import_environments', { path });
     environmentsStore.set(state.environments);

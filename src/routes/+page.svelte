@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import { safeInvoke } from '../lib/utils/tauri';
+  import { isTauri, safeInvoke } from '../lib/utils/tauri';
   import FileExplorer from '../components/FileExplorer.svelte';
   import JsonEditor from '../components/JsonEditor.svelte';
   import UrlConfig from '../components/UrlConfig.svelte';
@@ -85,6 +85,7 @@
   let curlError: string | null = null;
   let curlWarnings: string[] = [];
 
+  const isDesktop = isTauri();
   const methodsWithBody: HttpMethod[] = ['POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'];
 
   $: activeEnv = $environmentsStore.find((env) => env.id === $activeEnvironmentId) ?? null;
@@ -264,36 +265,59 @@
     let responseStatus = 0;
 
     try {
-      const result = await safeInvoke<{
-        status: number;
-        headers: Record<string, string>;
-        body: string;
-      }>('proxy_request', {
-        url: resolvedPayload.url,
-        method: resolvedPayload.method,
-        headers: getEnabledHeaders(resolvedPayload.headers),
-        body: resolvedPayload.body
-      });
+      if (isDesktop) {
+        const result = await safeInvoke<{
+          status: number;
+          headers: Record<string, string>;
+          body: string;
+        }>('proxy_request', {
+          url: resolvedPayload.url,
+          method: resolvedPayload.method,
+          headers: getEnabledHeaders(resolvedPayload.headers),
+          body: resolvedPayload.body
+        });
+
+        responseStatus = result.status;
+        responseHeadersRecord = result.headers;
+        responseHeaders = result.headers;
+        responseBody = result.body;
+      } else {
+        const fetchResponse = await fetch(resolvedPayload.url, {
+          method: resolvedPayload.method,
+          headers: getEnabledHeaders(resolvedPayload.headers),
+          body: resolvedPayload.body ?? undefined
+        });
+        responseStatus = fetchResponse.status;
+        fetchResponse.headers.forEach((value, key) => {
+          responseHeadersRecord[key] = value;
+        });
+        responseHeaders = responseHeadersRecord;
+        responseBody = await fetchResponse.text();
+      }
 
       requestDuration = Math.round(performance.now() - startTime);
-      statusCode = result.status;
-      responseHeadersRecord = result.headers;
-      responseStatus = result.status;
-      responseHeaders = result.headers;
-      responseBody = result.body;
+      statusCode = responseStatus;
 
       try {
-        response = JSON.parse(result.body);
+        response = JSON.parse(responseBody);
         isJsonResponse = true;
       } catch {
-        response = result.body;
+        response = responseBody;
         isJsonResponse = false;
       }
 
       lastRequestTime = new Date().toLocaleTimeString();
     } catch (err) {
       requestDuration = Math.round(performance.now() - startTime);
-      error = err instanceof Error ? err.message : String(err);
+      if (!isDesktop) {
+        const message = err instanceof Error ? err.message : String(err);
+        error =
+          message === 'Failed to fetch'
+            ? 'Request failed in browser mode. CORS restrictions apply to web demos.'
+            : message;
+      } else {
+        error = err instanceof Error ? err.message : String(err);
+      }
       response = '';
     } finally {
       loading = false;
@@ -538,6 +562,12 @@
       <ThemeToggle />
     </div>
   </header>
+
+  {#if !isDesktop}
+    <div class="demo-banner">
+      <strong>Web demo mode:</strong> requests use browser fetch (CORS applies). Collections and environments save to local storage.
+    </div>
+  {/if}
 
   <div class="workspace">
     <div class="sidebar">
@@ -976,6 +1006,21 @@ pre {
   padding-bottom: 1rem;
   border-bottom: 1px solid var(--border-color);
   gap: 1rem;
+}
+
+.demo-banner {
+  margin-bottom: 1.25rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--background);
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.demo-banner strong {
+  color: var(--text);
 }
 
 .brand {
