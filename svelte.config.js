@@ -4,11 +4,18 @@
 import adapter from "@sveltejs/adapter-static";
 import { vitePreprocess } from "@sveltejs/vite-plugin-svelte";
 
+const rawBasePath = process.env.BASE_PATH ?? "";
+const basePath =
+  rawBasePath && rawBasePath !== "/" ? rawBasePath.replace(/\/$/, "") : "";
+
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
   preprocess: vitePreprocess(),
   kit: {
     adapter: adapter(),
+    paths: {
+      base: basePath,
+    },
   },
 };
 

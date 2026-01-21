@@ -71,6 +71,18 @@ npm run tauri dev
 npm run tauri build
 ```
 
+### Web Demo (Static Build)
+
+```bash
+# Build the static demo for the /demos/http-request-studio path
+BASE_PATH=/demos/http-request-studio npm run build
+
+# Serve the static output
+npx serve build -s -l 3000
+```
+
+The Dockerfile defaults `BASE_PATH` to `/demos/http-request-studio` for Dokploy deployments.
+
 ## 🚀 Usage
 
 1. **Set the URL** — Enter your API endpoint

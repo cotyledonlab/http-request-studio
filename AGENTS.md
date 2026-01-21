@@ -86,9 +86,17 @@ npm run tauri build
 # Type checking
 npm run check
 
+# Build static web demo for Dokploy
+BASE_PATH=/demos/http-request-studio npm run build
+
 # Frontend only (no Tauri)
 npm run dev
 ```
+
+## Deployment Notes
+
+- Web demo builds rely on `BASE_PATH` to support `/demos/http-request-studio` routing.
+- The Dockerfile serves the `build/` output on port 3000 for Dokploy.
 
 ## Current Implementation Status
 

@@ -1,0 +1,9 @@
+node_modules
+build
+dist
+.svelte-kit
+src-tauri/target
+tmp
+.DS_Store
+npm-debug.log
+pnpm-debug.log
