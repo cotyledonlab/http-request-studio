@@ -15,6 +15,7 @@ const config = {
     adapter: adapter(),
     paths: {
       base: basePath,
+      relative: false,
     },
   },
 };
